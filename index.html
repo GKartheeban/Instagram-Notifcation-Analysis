@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Notification</title>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"></script>
+</head>
+<body>
+    <h1>Instagram Notification test</h1>
+    <button id="enableNotification">Enable Notification</button>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_KTD7uzaYz7_aD9w3MlKR_ZLBlsBRL2g",
+            authDomain: "inlaid-citron-403818.firebaseapp.com",
+            projectId: "inlaid-citron-403818",
+            storageBucket: "inlaid-citron-403818.firebasestorage.app",
+            messagingSenderId: "948468092126",
+            appId: "1:948468092126:web:6afee20ad2b4b6641d064f",
+            measurementId: "G-3696RYC2Z1"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const messaging = firebase.messaging();
+
+        document.getElementById('enableNotification').addEventListener('click', () => {
+            Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') {
+                    console.log('Notification Permission Granted.');
+                    messaging.getToken({vapidKey: 'BDSN-uuzNbbA_Ghwkj-LhvHn_mF_DIapnAo9MdBoljpMqwXxgrwuhjz-aJnPeeqz63Vi0IqV8akQh97A5Pzp9uY'}).then((currentToken) => {
+                        console.log('FCM Token:' + currentToken);
+                        alert('FCM Token:\n' + currentToken);
+                    }).catch((err) => {
+                        console.error('Error retrieving token:' + err);
+                    });
+                } else {
+                    console.log('Notification Permission Denied.');
+                }
+            });
+        });
+
+        // FIXED TYPOS IN THIS BLOCK
+        messaging.onMessage((payload) => {
+            console.log('[onMessage] Received foreground notification:', payload);
+
+            // Fixed spelling from 'notificaiton' to 'notification'
+            const notificationTitle = payload.notification?.title || 'Foreground notification';
+            const notificationBody = payload.notification?.body || 'Foreground body';
+
+            if (Notification.permission == 'granted') {
+                // Fixed spelling from 'Notifcation' to 'Notification'
+                new Notification(notificationTitle, { body: notificationBody });
+            }
+
+            fetch('http://localhost:5000/store-notification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: notificationTitle,
+                    body: notificationBody,
+                    type: 'foreground',
+                    source: 'Instagram',
+                }),
+            })
+            .then(response => response.json())
+            .then((data) => console.log('Notification stored:', data))
+            .catch((error) => console.error("Error Storing Notification:", error))
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                .then(registration => {
+                    console.log('Service worker registration with scope:', registration.scope);
+                })
+                .catch((error) => {
+                    console.error('Service worker registration failed:', error);
+                })
+        }
+    </script>
+</body>
+</html>
